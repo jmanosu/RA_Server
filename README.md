@@ -9,4 +9,4 @@ Hand Image Segmentation Neural Network and Mobile appplication for individuals w
 
 ## Installation Guide
 
-run installScript in bash on Debian, Ubuntu, Linux Mint to install dependencies for server. To run server enter *nodemon*. If *nodemon* use *node* instead.
+run installScript in bash on Debian, Ubuntu, Linux Mint to install dependencies for server. To run server run *node server.js*.
