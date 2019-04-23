@@ -10,6 +10,7 @@ parser.add_argument('IP', metavar='IP', type=str, nargs='+', help='IP address of
 parser.add_argument('PORT', metavar='Port', type=str, nargs='+', help='Port of remote machine.')
 
 parser.add_argument('Sending_Image', metavar='Sending_Image', type=str, nargs='+', help='image name sent by server.')
+parser.add_argument('Storing_Location', metavar='Storing_Location', type=str, nargs='+', help='image storage location.')
 
 args = parser.parse_args()
 
@@ -63,7 +64,7 @@ while True:
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-        cv2.imwrite('output.jpg', frame2)
+        cv2.imwrite(args.Storing_Location[0], frame2)
         c_socket.close()
         break
         #except:

@@ -10,3 +10,13 @@ Hand Image Segmentation Neural Network and Mobile appplication for individuals w
 ## Installation Guide
 
 run installScript in bash on Debian, Ubuntu, Linux Mint to install dependencies for server. To run server run *node server.js*.
+
+## Connection Tool
+
+To send files from Database to Docker image run
+
+python conn.py localhost 8485 \[SENDING IMAGE\] \[STORING LOCATION\]
+
+example:
+
+python conn.py localhost 8485 testPhoto.jpg file_recieved.jpg
