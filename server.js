@@ -1,117 +1,40 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const bodyParser  = require('body-parser');
 const morgan = require('morgan');
-const crypto = require('crypto');
-const dateTime = require('node-datetime');
-const MongoClient = require('mongodb').MongoClient;
-const port = process.env.PORT || 3000;
-var dt = dateTime.create();
+const bodyParser = require('body-parser');
 
-var db = null;
+const api = require('./api');
 
-var fs = require('fs');
+const { connectToDB } = require('./mongodb/mongo');
 
 const app = express();
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, 'public')));
+const port = process.env.PORT || 8000;
+
+/*
+ * Morgan is a popular logger.
+ */
 app.use(morgan('dev'));
 
+app.use(bodyParser.json());
+app.use(express.static('public'));
 
-const storage = multer.diskStorage({
-  destination: function (req, file, callback) {
-    callback(null, './public/uploads/')
-  },
-  filename: function (req, file, callback) {
-    crypto.pseudoRandomBytes(16, function(err, raw) {
-      if (err) return callback(err);
-    
-      callback(null, raw.toString('hex') + path.extname(file.originalname));
-    });
-  }
-});
+/*
+ * All routes for the API are written in modules in the api/ directory.  The
+ * top-level router lives in api/index.js.  That's what we include here, and
+ * it provides all of the routes.
+ */
+app.use('/', api);
 
-var upload = multer({storage: storage});
-
-var url = "mongodb://localhost:27017";
-
-MongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
-  if (err) throw err;
-  console.log("Database created!");
-  db = client.db('radb');
-  db.collection('Submissions', function (err, collection) {
-    collection.find({}).toArray(function(err, result) {
-      if (err) throw err;
-      console.log(result);
-    });
-  });
-  app.listen(port, () => console.log(`Listening on port ${port}`));
-});
-
-
-app.get('/submissions/photo/:photoURI', (req, res) => {
-  fs.readFile('./public/uploads/'+req.params.photoURI, function (err, content) {
-    if (err) {
-        res.writeHead(400, {'Content-type':'text/html'});
-        res.end("No such image");    
-    } else {
-        //specify the content type in the response will be an image
-        res.writeHead(200,{'Content-type':'image/jpg'});
-        res.end(content);
-    }
+app.use('*', function (req, res, next) {
+  res.status(404).json({
+    error: "Requested resource " + req.originalUrl + " does not exist"
   });
 });
 
-app.post('/submissions', upload.single('photo'), (req, res) => {
-  if (!req.file) {
-    console.log("No file received");
-    return res.send({
-      success: false
-    });
-
-  } else {
-    console.log('file received');
-    //console.log('userID: ' + req.body.userID + ' jointData ' + req.body.jointData + ' filename: ' + req.file.filename);
-    addSubmission(req.body.userID, req.body.jointData, req.file.filename);
-    return res.send({
-      success: true
-    })
-  }
-});
-
-app.get('/submissions/:userID', (req, res) => {
-  console.log("userID: " + req.params.userID);
-  db.collection('Submissions', function (err, collection) {
-    if (err) throw err;
-    collection.find({userID: req.params.userID}).toArray(function(err, result) {
-      if (err) throw err;
-      res.send(
-        {
-          "submissions": result
-        }
-      );
-    });
+setTimeout(() => {
+  console.log("connecting to database");
+  connectToDB(() => {
+    app.listen(port, () => {
+      console.log("== Server is listening on port:", port);
+	});
   });
-});
-
-app.use('*', (req, res, next) => {
-  console.log("The path " + req.originalUrl + " doesn't exist");
-  res.status(404).send({
-    err: "The path " + req.originalUrl + " doesn't exist"
-  });
-});
-
-function addSubmission(userID, jointData, photoURI){
-  if(db == null){
-    return;
-  }
-  db.collection('Submissions', function (err, collection) {
-    if (err) throw err;
-    db.collection('Submissions').countDocuments(function (err, count) {
-      if (err) throw err;
-      collection.insertOne({ id: count, userID: userID,date: dt.format('Y-m-d H:M:S'), status: "Processing", jointData: jointData, photoURI: photoURI });
-    });
-  });
-}
+}, 3000);
